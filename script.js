@@ -2,7 +2,7 @@
 // GLOBAL VARIABLES
 // ===================================
 let currentScene = 1;
-const totalScenes = 12;
+const totalScenes = 13;
 
 // ===================================
 // INITIALIZE ON PAGE LOAD
@@ -61,7 +61,7 @@ function showScene(sceneNumber) {
       currentScene = sceneNumber;
 
       // Specific scene effects
-      if (sceneNumber === 12) {
+      if (sceneNumber === 13) {
         setTimeout(() => {
           const secretBurst = document.getElementById("secretHeartBurst");
           if (secretBurst) {
@@ -636,13 +636,12 @@ function endGame() {
 
   if (gameScore >= targetScore) {
     result.classList.add("success");
-    result.innerHTML = `
-      <div class="result-compliment">
-        <h3>🎉 YOU ARE INCREDIBLE! 🎉</h3>
-        <p>I knew you could do it! You caught my heart with such grace. You're absolutely amazing, Dira! 💖</p>
-        <button class="btn-primary" onclick="nextScene(9)" style="margin-top: 1.5rem;">One Final Test... 💌</button>
-      </div>
-    `;
+    result.textContent = "🎉 Perfect! You caught my love! 🎉";
+
+    // Transition to the dedicated compliment scene (Scene 9)
+    setTimeout(() => {
+      nextScene(9);
+    }, 2000);
   } else {
     result.classList.add("fail");
     result.textContent = `You caught ${gameScore} hearts. Try again to unlock the secret message!`;
