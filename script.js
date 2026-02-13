@@ -649,17 +649,28 @@ function showLoveMessage() {
 
 // End game
 function endGame() {
+  // Ensure game is strictly inactive
   gameActive = false;
-  clearInterval(gameInterval);
-  clearInterval(heartSpawnInterval);
-  if (gameLoopId) cancelAnimationFrame(gameLoopId);
+  
+  if (gameInterval) {
+    clearInterval(gameInterval);
+    gameInterval = null;
+  }
+  if (heartSpawnInterval) {
+    clearInterval(heartSpawnInterval);
+    heartSpawnInterval = null;
+  }
+  if (gameLoopId) {
+    cancelAnimationFrame(gameLoopId);
+    gameLoopId = null;
+  }
 
-  // Remove remaining hearts
+  // Remove ALL falling hearts immediately
   const remainingHearts = document.querySelectorAll(".falling-heart-game");
   remainingHearts.forEach((heart) => heart.remove());
-  activeHearts = []; // Clear active hearts list
+  activeHearts = [];
 
-  // Show result
+  // Clear and update messages container
   const messagesContainer = document.getElementById("gameMessages");
   messagesContainer.innerHTML = "";
 
@@ -667,25 +678,32 @@ function endGame() {
   result.className = "game-result";
 
   const isMobile = isMobileDevice();
-  const targetScore = isMobile ? 85 : 75; // Still hard, as requested previously
+  const targetScore = isMobile ? 85 : 75;
+
+  // Clean UI state
+  document.getElementById("startGameBtn").style.display = "none";
+  document.getElementById("retryGameBtn").style.display = "none";
 
   if (gameScore >= targetScore) {
     result.classList.add("success");
     result.textContent = "🎉 Perfect! You caught my love! 🎉";
     messagesContainer.appendChild(result);
 
-    // Create the continuation button instead of automatic transition
+    // Manual transition button - THE ONLY WAY to continue
     const nextBtn = document.createElement("button");
     nextBtn.className = "btn-primary";
+    nextBtn.id = "gameSuccessNextBtn";
     nextBtn.textContent = "Continue to Clarification 💌";
-    nextBtn.style.marginTop = "1rem";
-    nextBtn.onclick = () => nextScene(9);
+    nextBtn.style.marginTop = "1.5rem";
+    nextBtn.style.display = "inline-block";
+    
+    // Explicitly handle the click to transition to the next scene (Scene 9)
+    nextBtn.onclick = function(e) {
+      if (e) e.preventDefault();
+      nextScene(9);
+    };
     
     messagesContainer.appendChild(nextBtn);
-    
-    // Hide help buttons
-    document.getElementById("retryGameBtn").style.display = "none";
-    document.getElementById("startGameBtn").style.display = "none";
   } else {
     result.classList.add("fail");
     result.textContent = `You caught ${gameScore}/${targetScore} hearts. Try again to unlock the secret message!`;
