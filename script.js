@@ -507,6 +507,10 @@ function initGame() {
   document.getElementById("gameMessages").innerHTML = "";
   document.getElementById("startGameBtn").style.display = "none";
   document.getElementById("retryGameBtn").style.display = "none";
+  
+  // Show target
+  const targetLabel = document.querySelector(".stat-item:last-child .stat-value");
+  if (targetLabel) targetLabel.textContent = (isMobile ? 85 : 75) + " ❤️";
 
   // Cache basket for collision
   cachedBasket = document.getElementById("basket");
@@ -618,6 +622,13 @@ function catchHeart(heart) {
   // Show random love message
   showLoveMessage();
 
+  // Check for immediate win
+  const targetScore = isMobileDevice() ? 85 : 75;
+  if (gameScore >= targetScore && gameActive) {
+    // Immediate win!
+    endGame();
+  }
+
   // Remove heart from active list and DOM
   setTimeout(() => {
     if (heart.parentElement) {
@@ -693,9 +704,11 @@ function endGame() {
     const nextBtn = document.createElement("button");
     nextBtn.className = "btn-primary";
     nextBtn.id = "gameSuccessNextBtn";
-    nextBtn.textContent = "Continue to Clarification 💌";
+    nextBtn.textContent = "Click to Continue 💌";
     nextBtn.style.marginTop = "1.5rem";
     nextBtn.style.display = "inline-block";
+    nextBtn.style.padding = "1.2rem 3rem"; // Make it bigger
+    nextBtn.style.fontSize = "1.3rem";
     
     // Explicitly handle the click to transition to the next scene (Scene 9)
     nextBtn.onclick = function(e) {
@@ -704,6 +717,11 @@ function endGame() {
     };
     
     messagesContainer.appendChild(nextBtn);
+    
+    // Auto-scroll to show the button if it's off-screen
+    setTimeout(() => {
+      nextBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
   } else {
     result.classList.add("fail");
     result.textContent = `You caught ${gameScore}/${targetScore} hearts. Try again to unlock the secret message!`;
