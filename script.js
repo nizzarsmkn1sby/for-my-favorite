@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", function () {
   createFloatingHearts();
   initializeScenes();
   addInteractiveEffects();
+  setupBasketControls(); // Setup once
 });
 
 // ===================================
@@ -87,8 +88,16 @@ function showScene(sceneNumber) {
 
 function nextScene(sceneNumber) {
   // Add fade out effect
-  const currentSceneElement = document.getElementById(`scene${currentScene}`);
-  currentSceneElement.style.opacity = "0";
+  let currentSceneElement = document.getElementById(`scene${currentScene}`);
+  
+  // Safety: if currentScene is wrong, find the active one
+  if (!currentSceneElement || !currentSceneElement.classList.contains('active')) {
+    currentSceneElement = document.querySelector('.scene.active');
+  }
+  
+  if (currentSceneElement) {
+    currentSceneElement.style.opacity = "0";
+  }
 
   setTimeout(() => {
     showScene(sceneNumber);
@@ -107,9 +116,9 @@ function runAway() {
   const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
   
   // Calculate random position within viewport with padding
-  const padding = 20;
-  const btnWidth = btn.offsetWidth;
-  const btnHeight = btn.offsetHeight;
+  const padding = 50; // More padding for safety
+  const btnWidth = btn.offsetWidth || 100;
+  const btnHeight = btn.offsetHeight || 50;
   
   const x = Math.random() * (vw - btnWidth - (padding * 2)) + padding;
   const y = Math.random() * (vh - btnHeight - (padding * 2)) + padding;
@@ -117,8 +126,8 @@ function runAway() {
   btn.style.position = "fixed";
   btn.style.left = x + "px";
   btn.style.top = y + "px";
-  btn.style.zIndex = "9999";
-  btn.style.transition = "all 0.15s ease-out"; // Quick but smooth movement
+  btn.style.zIndex = "10000"; // Ensure it's on top
+  btn.style.transition = "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)"; // Playful movement
 }
 
 function showAccusation() {
@@ -467,6 +476,8 @@ let heartSpawnInterval = null;
 let gameActive = false;
 let activeHearts = [];
 let gameLoopId = null;
+let cachedBasket = null;
+let basketWidth = 0;
 
 // Start minigame transition
 function startMinigame() {
@@ -481,11 +492,14 @@ function initGame() {
   gameActive = true;
   activeHearts = [];
 
+  // Stop any existing game first
+  if (gameInterval) clearInterval(gameInterval);
+  if (heartSpawnInterval) clearInterval(heartSpawnInterval);
+  if (gameLoopId) cancelAnimationFrame(gameLoopId);
+
   // Detect mobile
   const isMobile = window.innerWidth <= 768;
-  
-  // Set difficulty based on mobile
-  const spawnRate = isMobile ? 95 : 120; // 25% faster spawn on mobile
+  const spawnRate = isMobile ? 85 : 110; // Slightly faster for more chances
   
   // Update UI
   document.getElementById("gameScore").textContent = gameScore;
@@ -496,7 +510,7 @@ function initGame() {
 
   // Cache basket for collision
   cachedBasket = document.getElementById("basket");
-  basketWidth = cachedBasket.offsetWidth;
+  if (cachedBasket) basketWidth = cachedBasket.offsetWidth;
 
   // Clear any existing hearts
   const existingHearts = document.querySelectorAll(".falling-heart-game");
@@ -505,14 +519,11 @@ function initGame() {
   // Start game timer
   gameInterval = setInterval(updateTimer, 1000);
 
-  // Hell Mode spawning
+  // Spawning
   heartSpawnInterval = setInterval(spawnFallingHeart, spawnRate);
 
   // Start unified game loop
   gameLoop();
-
-  // Setup basket controls
-  setupBasketControls();
 }
 
 // Unified Game Loop for performance
@@ -573,9 +584,6 @@ function spawnFallingHeart() {
 }
 
 // Check collisions between ALL active hearts and basket
-let cachedBasket = null;
-let basketWidth = 0;
-
 function checkCollisions() {
   if (!cachedBasket) return;
   const basketRect = cachedBasket.getBoundingClientRect();
@@ -586,14 +594,13 @@ function checkCollisions() {
 
     const heartRect = heart.getBoundingClientRect();
     
-    // Performance optimization: Skip checks if heart is too high
-    if (heartRect.bottom < basketRect.top) return;
-
+    // Forgiving collision: give the heart 15px extra space horizontally
+    const tolerance = 15;
     if (!(
       heartRect.bottom < basketRect.top ||
-      heartRect.top > basketRect.bottom ||
-      heartRect.right < basketRect.left ||
-      heartRect.left > basketRect.right
+      heartRect.top > basketRect.bottom + 20 || // Extra 20px leeway for fast falling hearts
+      heartRect.right < basketRect.left - tolerance ||
+      heartRect.left > basketRect.right + tolerance
     )) {
       catchHeart(heart);
     }
@@ -659,23 +666,35 @@ function endGame() {
   const result = document.createElement("div");
   result.className = "game-result";
 
-  const targetScore = isMobileDevice() ? 85 : 75; // Even harder on mobile
+  const isMobile = isMobileDevice();
+  const targetScore = isMobile ? 85 : 75; // Still hard, as requested previously
 
   if (gameScore >= targetScore) {
     result.classList.add("success");
     result.textContent = "🎉 Perfect! You caught my love! 🎉";
+    messagesContainer.appendChild(result);
 
-    // Transition to the dedicated compliment scene (Scene 9)
-    setTimeout(() => {
-      nextScene(9);
-    }, 2000);
+    // Create the continuation button instead of automatic transition
+    const nextBtn = document.createElement("button");
+    nextBtn.className = "btn-primary";
+    nextBtn.textContent = "Continue to Clarification 💌";
+    nextBtn.style.marginTop = "1rem";
+    nextBtn.onclick = () => nextScene(9);
+    
+    messagesContainer.appendChild(nextBtn);
+    
+    // Hide help buttons
+    document.getElementById("retryGameBtn").style.display = "none";
+    document.getElementById("startGameBtn").style.display = "none";
   } else {
     result.classList.add("fail");
-    result.textContent = `You caught ${gameScore} hearts. Try again to unlock the secret message!`;
-    document.getElementById("retryGameBtn").style.display = "inline-block";
+    result.textContent = `You caught ${gameScore}/${targetScore} hearts. Try again to unlock the secret message!`;
+    messagesContainer.appendChild(result);
+    
+    const retryBtn = document.getElementById("retryGameBtn");
+    retryBtn.style.display = "inline-block";
+    retryBtn.textContent = "Try Again! 🎮";
   }
-
-  messagesContainer.appendChild(result);
 }
 
 // Retry game
