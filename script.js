@@ -100,13 +100,25 @@ function nextScene(sceneNumber) {
 // ===================================
 function runAway() {
   const btn = document.getElementById("yesBtn");
-  const x = Math.random() * (window.innerWidth - btn.offsetWidth);
-  const y = Math.random() * (window.innerHeight - btn.offsetHeight);
+  if (!btn) return;
+  
+  // Get viewport dimensions
+  const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+  const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+  
+  // Calculate random position within viewport with padding
+  const padding = 20;
+  const btnWidth = btn.offsetWidth;
+  const btnHeight = btn.offsetHeight;
+  
+  const x = Math.random() * (vw - btnWidth - (padding * 2)) + padding;
+  const y = Math.random() * (vh - btnHeight - (padding * 2)) + padding;
   
   btn.style.position = "fixed";
   btn.style.left = x + "px";
   btn.style.top = y + "px";
   btn.style.zIndex = "9999";
+  btn.style.transition = "all 0.15s ease-out"; // Quick but smooth movement
 }
 
 function showAccusation() {
@@ -624,12 +636,13 @@ function endGame() {
 
   if (gameScore >= targetScore) {
     result.classList.add("success");
-    result.textContent = "🎉 Perfect! You caught my love! 🎉";
-
-    // Show prank game
-    setTimeout(() => {
-      nextScene(9);
-    }, 2000);
+    result.innerHTML = `
+      <div class="result-compliment">
+        <h3>🎉 YOU ARE INCREDIBLE! 🎉</h3>
+        <p>I knew you could do it! You caught my heart with such grace. You're absolutely amazing, Dira! 💖</p>
+        <button class="btn-primary" onclick="nextScene(9)" style="margin-top: 1.5rem;">One Final Test... 💌</button>
+      </div>
+    `;
   } else {
     result.classList.add("fail");
     result.textContent = `You caught ${gameScore} hearts. Try again to unlock the secret message!`;
