@@ -124,8 +124,8 @@ function runAway() {
 function showAccusation() {
   document.getElementById("yesBtn").style.display = "none";
   document.getElementById("noBtn").style.display = "none";
-  document.querySelector("#scene9 .subtitle").style.display = "none";
-  document.querySelector("#scene9 .elegant-title").style.display = "none";
+  document.querySelector("#scene10 .subtitle").style.display = "none";
+  document.querySelector("#scene10 .elegant-title").style.display = "none";
   document.getElementById("accusationResult").style.display = "block";
 }
 
