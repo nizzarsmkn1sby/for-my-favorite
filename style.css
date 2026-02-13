@@ -925,13 +925,19 @@ body::before {
   }
 }
 
-.result-compliment {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  padding: 2rem;
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  animation: slideUp 0.8s ease-out;
+.poetic-verse {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: clamp(1.1rem, 3vw, 1.4rem);
+  color: var(--soft-pink);
+  margin: 1.5rem 0;
+  line-height: 1.8;
+  text-shadow: 0 0 10px rgba(255, 107, 157, 0.3);
+  opacity: 0.9;
+}
+
+.poetic-verse p {
+  margin-bottom: 0.8rem;
 }
 
 .result-compliment h3 {
@@ -940,6 +946,7 @@ body::before {
   margin-bottom: 1rem;
   background: linear-gradient(135deg, var(--accent-gold), #fff);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
