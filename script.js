@@ -373,9 +373,12 @@ window.addEventListener(
 document.addEventListener("keydown", function (e) {
   // Press Enter or Space to continue
   if (e.key === "Enter" || e.key === " ") {
+    // Skip auto-click for the game scene to prevent bugs
+    if (currentScene === 8) return;
+
     if (currentScene < totalScenes) {
       const button = document.querySelector(`#scene${currentScene} button`);
-      if (button) {
+      if (button && button.style.display !== "none") {
         button.click();
       }
     }
@@ -414,10 +417,13 @@ function handleSwipe() {
   const swipeThreshold = 50;
   const diff = touchStartX - touchEndX;
 
+  // Skip auto-swipe-click for the game scene to prevent accidental transitions
+  if (currentScene === 8) return;
+
   // Swipe left to go next
   if (diff > swipeThreshold && currentScene < totalScenes) {
     const button = document.querySelector(`#scene${currentScene} button`);
-    if (button) {
+    if (button && button.style.display !== "none") {
       button.click();
     }
   }
