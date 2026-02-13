@@ -436,22 +436,26 @@ document.addEventListener("contextmenu", function (e) {
   }
 });
 
-// ===================================
-// VISIBILITY CHANGE (PAUSE ANIMATIONS WHEN TAB IS HIDDEN)
-// ===================================
+// VISIBILITY CHANGE
 document.addEventListener("visibilitychange", function () {
+  const hearts = document.querySelectorAll(".floating-heart, .falling-heart-game");
   if (document.hidden) {
-    // Pause animations
-    document.querySelectorAll(".floating-heart").forEach((heart) => {
-      heart.style.animationPlayState = "paused";
-    });
+    hearts.forEach(h => h.style.animationPlayState = "paused");
+    if (gameActive) clearInterval(gameInterval);
+    if (gameActive) clearInterval(heartSpawnInterval);
   } else {
-    // Resume animations
-    document.querySelectorAll(".floating-heart").forEach((heart) => {
-      heart.style.animationPlayState = "running";
-    });
+    hearts.forEach(h => h.style.animationPlayState = "running");
+    if (gameActive) {
+      gameInterval = setInterval(updateTimer, 1000);
+      const isMobile = window.innerWidth <= 768;
+      heartSpawnInterval = setInterval(spawnFallingHeart, isMobile ? 95 : 120);
+    }
   }
 });
+
+function isMobileDevice() {
+  return window.innerWidth <= 768;
+}
 
 // ===================================
 // MINIGAME FUNCTIONS (OPTIMIZED)
@@ -473,16 +477,26 @@ function startMinigame() {
 function initGame() {
   // Reset game state
   gameScore = 0;
-  gameTimer = 15; // Shorter time for high intensity
+  gameTimer = 15; 
   gameActive = true;
   activeHearts = [];
 
+  // Detect mobile
+  const isMobile = window.innerWidth <= 768;
+  
+  // Set difficulty based on mobile
+  const spawnRate = isMobile ? 95 : 120; // 25% faster spawn on mobile
+  
   // Update UI
   document.getElementById("gameScore").textContent = gameScore;
   document.getElementById("gameTimer").textContent = gameTimer;
   document.getElementById("gameMessages").innerHTML = "";
   document.getElementById("startGameBtn").style.display = "none";
   document.getElementById("retryGameBtn").style.display = "none";
+
+  // Cache basket for collision
+  cachedBasket = document.getElementById("basket");
+  basketWidth = cachedBasket.offsetWidth;
 
   // Clear any existing hearts
   const existingHearts = document.querySelectorAll(".falling-heart-game");
@@ -491,8 +505,8 @@ function initGame() {
   // Start game timer
   gameInterval = setInterval(updateTimer, 1000);
 
-  // Hell Mode spawning - extremely fast (120ms)
-  heartSpawnInterval = setInterval(spawnFallingHeart, 120);
+  // Hell Mode spawning
+  heartSpawnInterval = setInterval(spawnFallingHeart, spawnRate);
 
   // Start unified game loop
   gameLoop();
@@ -532,11 +546,18 @@ function spawnFallingHeart() {
   ];
 
   // Random horizontal position
-  const randomX = Math.random() * 80 + 10; // 10% to 90%
+  const randomX = Math.random() * 88 + 6; // Stay away from extreme edges
   heart.style.left = randomX + "%";
 
-  // Random fall duration (0.5-0.8 seconds) - ULTRA FAST for Level Max
-  const fallDuration = Math.random() * 0.3 + 0.5;
+  // Detect mobile
+  const isMobile = window.innerWidth <= 768;
+
+  // Random fall duration - ULTRA FAST for Level Max
+  // On mobile: 0.4 - 0.6s (Insane)
+  // On desktop: 0.5 - 0.7s
+  const minFall = isMobile ? 0.35 : 0.45;
+  const maxFall = isMobile ? 0.55 : 0.65;
+  const fallDuration = Math.random() * (maxFall - minFall) + minFall;
   heart.style.animationDuration = fallDuration + "s";
 
   gameArea.appendChild(heart);
@@ -552,15 +573,21 @@ function spawnFallingHeart() {
 }
 
 // Check collisions between ALL active hearts and basket
-function checkCollisions() {
-  const basket = document.getElementById("basket");
-  if (!basket) return;
-  const basketRect = basket.getBoundingClientRect();
+let cachedBasket = null;
+let basketWidth = 0;
 
+function checkCollisions() {
+  if (!cachedBasket) return;
+  const basketRect = cachedBasket.getBoundingClientRect();
+
+  // Filter only hearts that are low enough to collide
   activeHearts.forEach((heart) => {
     if (heart.classList.contains("caught-effect")) return;
 
     const heartRect = heart.getBoundingClientRect();
+    
+    // Performance optimization: Skip checks if heart is too high
+    if (heartRect.bottom < basketRect.top) return;
 
     if (!(
       heartRect.bottom < basketRect.top ||
@@ -632,7 +659,7 @@ function endGame() {
   const result = document.createElement("div");
   result.className = "game-result";
 
-  const targetScore = 75; // Level Max Target
+  const targetScore = isMobileDevice() ? 85 : 75; // Even harder on mobile
 
   if (gameScore >= targetScore) {
     result.classList.add("success");
@@ -659,38 +686,30 @@ function retryGame() {
 // Setup basket controls with better performance
 function setupBasketControls() {
   const gameArea = document.getElementById("gameArea");
-  
-  // Throttle movement for performance
-  let lastMove = 0;
-  const throttleTime = 16; // ~60fps
+  const basket = document.getElementById("basket");
+  if (!basket) return;
 
   const handleMove = (clientX) => {
-    const now = Date.now();
-    if (now - lastMove < throttleTime) return;
-    lastMove = now;
-
     const rect = gameArea.getBoundingClientRect();
-    const basket = document.getElementById("basket");
-    if (!basket) return;
-    const basketWidth = 90;
+    const currentBasketWidth = basket.offsetWidth;
     
-    let x = clientX - rect.left;
-    x = Math.max(basketWidth / 2, Math.min(x, rect.width - basketWidth / 2));
+    let x = clientX - rect.left - (currentBasketWidth / 2);
+    // Bind to game area
+    x = Math.max(0, Math.min(x, rect.width - currentBasketWidth));
     
-    // Percentage for responsiveness
-    const percentX = (x / rect.width) * 100;
-    basket.style.left = percentX + "%";
+    // Smooth transform instead of left
+    basket.style.transform = `translateX(${x}px)`;
   };
 
   gameArea.addEventListener("mousemove", (e) => {
     if (!gameActive) return;
-    handleMove(e.clientX);
+    requestAnimationFrame(() => handleMove(e.clientX));
   });
 
   gameArea.addEventListener("touchmove", (e) => {
     if (!gameActive) return;
     e.preventDefault();
-    handleMove(e.touches[0].clientX);
+    requestAnimationFrame(() => handleMove(e.touches[0].clientX));
   }, { passive: false });
 }
 

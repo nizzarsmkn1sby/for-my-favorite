@@ -789,20 +789,29 @@ body::before {
 .basket {
   position: absolute;
   bottom: 25px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 85px;
+  left: 0;
+  width: 90px;
   height: 65px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: move;
-  transition: transform 0.08s ease-out;
+  transition: transform 0.05s linear;
   user-select: none;
   z-index: 10;
   filter: drop-shadow(0 4px 12px rgba(255, 107, 157, 0.5));
   /* Performance optimization */
   will-change: transform;
+}
+
+/* Harder on Mobile: Smaller Basket */
+@media (max-width: 768px) {
+  .basket {
+    width: 65px;
+  }
+  .basket-icon {
+    font-size: 2.6rem;
+  }
 }
 
 .basket-icon {
@@ -820,17 +829,32 @@ body::before {
   }
 }
 
+@keyframes fall {
+  0% {
+    transform: translateY(-80px);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(500px);
+    opacity: 0;
+  }
+}
+
 .falling-heart-game {
   position: absolute;
-  font-size: 2.3rem;
-  cursor: pointer;
-  animation: fall linear;
+  font-size: 2.3rem; 
+  animation: fall linear forwards;
   user-select: none;
   z-index: 5;
-  transition: transform 0.2s ease;
   filter: drop-shadow(0 0 12px rgba(255, 107, 157, 0.6));
-  /* Performance optimization */
-  will-change: transform, top;
+  will-change: transform;
+  pointer-events: none; /* Collision via JS, don't need pointer events */
 }
 
 .falling-heart-game:hover {
